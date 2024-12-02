@@ -38,6 +38,20 @@ argon2 = ["argon2-cffi (>=16.1.0)"]
 bcrypt = ["bcrypt"]
 
 [[package]]
+name = "djangorestframework"
+version = "3.11.0"
+description = "Web APIs for Django, made easy."
+optional = false
+python-versions = ">=3.5"
+files = [
+    {file = "djangorestframework-3.11.0-py3-none-any.whl", hash = "sha256:05809fc66e1c997fd9a32ea5730d9f4ba28b109b9da71fccfa5ff241201fd0a4"},
+    {file = "djangorestframework-3.11.0.tar.gz", hash = "sha256:e782087823c47a26826ee5b6fa0c542968219263fb3976ec3c31edab23a4001f"},
+]
+
+[package.dependencies]
+django = ">=1.11"
+
+[[package]]
 name = "pytz"
 version = "2024.2"
 description = "World timezone definitions, modern and historical"
@@ -77,4 +91,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "8901ef490b70e55ede1e94b0abefff769e16cc9ff89b7e406ed81ad0cb173f46"
+content-hash = "b2d7495b32e5a446723332acc2b24f3479f715c11a0581000ea54922b7deba3e"

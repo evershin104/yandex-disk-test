@@ -2,14 +2,34 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.views import View
 
-class URLSubmitView(View):
+from project.yandex_integration.forms import URLForm
 
+
+class URLSubmitView(View):
+    """"""
     def get(self, request, *args, **kwargs):
-        return render(request, 'main_page.html')
+        """
+
+        Args:
+            request:
+
+        Returns:
+
+        """
+        return render(request, 'main_page.html', {'url': ''})
 
     def post(self, request, *args, **kwargs):
-        url = request.POST.get('url')
-        if url:
-            # Логика обработки URL
-            return JsonResponse({'message': 'ok', 'url': url})
-        return JsonResponse({'error': 'not ok'}, status=400)
+        """
+
+        Args:
+            request:
+
+        Returns:
+
+        """
+        form = URLForm(request.POST)
+        if form.is_valid():
+            url = form.cleaned_data['url']
+            return JsonResponse({'message': 'URL received successfully!', 'url': url})
+        else:
+            return JsonResponse({'errors': form.errors}, status=400)

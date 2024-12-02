@@ -37,8 +37,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework',       # noqa
-    'project.yandex_integration'
+    'rest_framework',
+
+    'project.yandex_integration',
 ]
 
 MIDDLEWARE = [

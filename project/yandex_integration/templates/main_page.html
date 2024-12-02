@@ -25,12 +25,49 @@
             flex-wrap: wrap;
             gap: 15px;
         }
-        #imagesContainer img {
+        .image-wrapper {
+            position: relative;
             max-width: 150px;
-            max-height: 150px;
-            object-fit: cover;
             border: 1px solid #ddd;
             border-radius: 5px;
+            overflow: hidden;
+            display: inline-block;
+            text-align: center;
+        }
+        .image-wrapper img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: cover;
+        }
+        .image-wrapper .no-preview {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 150px;
+            background: #f1f1f1;
+            color: #777;
+            font-size: 14px;
+        }
+        .image-wrapper .checkbox {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 2px;
+            border-radius: 3px;
+        }
+        .image-wrapper .name {
+            margin-top: 5px;
+            font-size: 12px;
+            color: #333;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        #buttonsContainer {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
         }
     </style>
 </head>
@@ -50,16 +87,21 @@
         </form>
 
         <div id="imagesContainer"></div>
+        <div id="buttonsContainer" style="display: none;">
+            <button id="downloadSelected" class="btn btn-success">Скачать выбранные</button>
+            <button id="downloadAll" class="btn btn-secondary">Скачать все</button>
+        </div>
     </div>
 
     <script>
+        const selectedDownloads = new Map();
+
         document.getElementById('urlForm').addEventListener('submit', function(e) {
             e.preventDefault();
 
             const url = document.getElementById('urlInput').value;
             const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
-            // Проверка начала строки URL
             if (!url.startsWith("https://disk.yandex.com/")) {
                 document.getElementById('error-message').textContent = "URL должен начинаться с 'https://disk.yandex.com/'";
                 document.getElementById('error-message').style.display = "block";
@@ -78,8 +120,11 @@
             .then(data => {
                 const errorMessage = document.getElementById('error-message');
                 const imagesContainer = document.getElementById('imagesContainer');
+                const buttonsContainer = document.getElementById('buttonsContainer');
                 errorMessage.style.display = "none";
                 imagesContainer.innerHTML = "";
+                selectedDownloads.clear();
+                buttonsContainer.style.display = "none";
 
                 if (!data || !data.data || !data.data.previews || data.data.previews.length === 0) {
                     errorMessage.textContent = "Нет доступных данных для отображения.";
@@ -88,11 +133,65 @@
                 }
 
                 data.data.previews.forEach(item => {
-                    const imgElement = document.createElement('img');
-                    imgElement.src = item.preview;
-                    imgElement.alt = item.name;
-                    imgElement.title = item.name;
-                    imagesContainer.appendChild(imgElement);
+                    const wrapper = document.createElement('div');
+                    wrapper.classList.add('image-wrapper');
+
+                    if (item.preview) {
+                        const imgElement = document.createElement('img');
+                        imgElement.src = item.preview;
+                        imgElement.alt = item.name;
+                        imgElement.title = item.name;
+                        wrapper.appendChild(imgElement);
+                    } else {
+                        const noPreview = document.createElement('div');
+                        noPreview.classList.add('no-preview');
+                        noPreview.textContent = 'No preview';
+                        wrapper.appendChild(noPreview);
+                    }
+
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.classList.add('checkbox');
+                    checkbox.title = 'Выбрать';
+                    checkbox.addEventListener('change', () => {
+                        if (checkbox.checked) {
+                            selectedDownloads.set(item.name, item.download);
+                        } else {
+                            selectedDownloads.delete(item.name);
+                        }
+                    });
+                    wrapper.appendChild(checkbox);
+
+                    const nameElement = document.createElement('div');
+                    nameElement.classList.add('name');
+                    nameElement.textContent = item.name;
+                    wrapper.appendChild(nameElement);
+
+                    imagesContainer.appendChild(wrapper);
+                });
+
+                buttonsContainer.style.display = "flex";
+
+                document.getElementById('downloadSelected').addEventListener('click', () => {
+                    if (selectedDownloads.size === 0) {
+                        alert('Выберите хотя бы один элемент для скачивания.');
+                        return;
+                    }
+                    selectedDownloads.forEach((url, name) => {
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = name;
+                        link.click();
+                    });
+                });
+
+                document.getElementById('downloadAll').addEventListener('click', () => {
+                    data.data.previews.forEach(item => {
+                        const link = document.createElement('a');
+                        link.href = item.download;
+                        link.download = item.name;
+                        link.click();
+                    });
                 });
             })
             .catch(error => {

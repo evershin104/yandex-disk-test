@@ -1,7 +1,4 @@
-from multiprocessing.managers import public_methods
-
-import requests
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render
 from django.views import View
 
@@ -10,20 +7,15 @@ from project.yandex_integration.integration import YandexDiskIntegration
 
 
 class URLSubmitView(View):
-    """"""
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs) -> HttpResponse:        # noqa maybe static
         return render(request, 'main_page.html', {'url': ''})
 
-    def post(self, request, *args, **kwargs):
-        """
-
+    def post(self, request, *args, **kwargs)-> JsonResponse:        # noqa maybe static
+        """Main request handler for `URLForm`
         Args:
-            request:
-            *args:
-            **kwargs:
-
+            default for `get`...
         Returns:
-
+            JsonResponse with its' data
         """
         form = URLForm(request.POST)
         if form.is_valid():

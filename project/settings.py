@@ -16,6 +16,7 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 YANDEX_CLOUD = 'https://cloud-api.yandex.net/v1/disk/public/resources'
+"""Yandex cloud endpoint"""
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/

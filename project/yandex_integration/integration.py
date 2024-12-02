@@ -1,39 +1,48 @@
-from typing import Dict
-
+from typing import Dict, List, Union
 import requests
-import json
-
 from django.http import JsonResponse
+from requests import Response
 
 from project import settings
 
 
 class YandexDiskIntegration:
+    """Class for YDisk integration."""
 
     def __init__(self, public_key: str) -> None:
-        self.api = settings.YANDEX_CLOUD
-        self.public_key = public_key
+        self.api: str = settings.YANDEX_CLOUD
+        self.public_key: str = public_key
 
 
     @staticmethod
-    def extract_items_preview_links(response: Dict) -> Dict:
-        items = response.get('_embedded', dict()).get('items', [])
-        previews = []
+    def extract_items_preview_links(response: Dict) -> Dict[str, List]:
+        """Extracts usefull info from YDisk `items`
+        Args:
+            response: Dict object
+        Returns:
+            Structured data for each element
+        """
+        items: List = response.get('_embedded', dict()).get('items', [])
+        previews: List = []
 
         for item in items:
-            preview = item.get('preview')
-            if preview:
-                previews.append({
-                    'name': item.get('name'),
-                    'preview': preview,
-                    'download': item.get('file')
-                })
+            preview: List[Dict] = item.get('preview')
+            previews.append({
+                'name': item.get('name'),
+                'preview': preview,
+                'download': item.get('file')
+            })
         return {'previews': previews}
 
 
-    def get_resource_preview(self):
+    def get_resource_preview(self) -> Union[Dict, JsonResponse]:
+        """Returns structured elements from YDisk
+        Returns:
+            Structured data for each element OR JsonResponse
+                with error
+        """
         try:
-            response = requests.get(self.api, params={"public_key": self.public_key})
+            response: Response = requests.get(self.api, params={"public_key": self.public_key})
             if response.ok:
                 dict_response = response.json() or {}
                 return self.extract_items_preview_links(dict_response)

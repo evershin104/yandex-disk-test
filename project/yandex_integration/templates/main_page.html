@@ -18,56 +18,34 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 900px;
         }
-        #imagesContainer {
-            margin-top: 20px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
         }
-        .image-wrapper {
+        .preview-item {
             position: relative;
-            max-width: 150px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            overflow: hidden;
-            display: inline-block;
             text-align: center;
+            cursor: pointer;
         }
-        .image-wrapper img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: cover;
-        }
-        .image-wrapper .no-preview {
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        .preview-item img {
+            width: 100%;
             height: 150px;
-            background: #f1f1f1;
-            color: #777;
-            font-size: 14px;
+            object-fit: cover;
+            border-radius: 5px;
         }
-        .image-wrapper .checkbox {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: rgba(255, 255, 255, 0.8);
-            padding: 2px;
-            border-radius: 3px;
-        }
-        .image-wrapper .name {
-            margin-top: 5px;
-            font-size: 12px;
-            color: #333;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        #buttonsContainer {
-            margin-top: 15px;
+        .preview-item .no-preview {
             display: flex;
-            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            height: 150px;
+            border: 1px dashed #ccc;
+            border-radius: 5px;
+            color: #999;
+            font-size: 14px;
         }
     </style>
 </head>
@@ -86,21 +64,23 @@
             </div>
         </form>
 
-        <div id="imagesContainer"></div>
-        <div id="buttonsContainer" style="display: none;">
-            <button id="downloadSelected" class="btn btn-success">Скачать выбранные</button>
-            <button id="downloadAll" class="btn btn-secondary">Скачать все</button>
+        <div id="result" class="result mt-4" style="display: none;">
+            <div class="d-flex justify-content-end mb-3">
+                <button id="downloadAll" class="btn btn-success me-2">Скачать все</button>
+            </div>
+            <div class="preview-grid" id="previewGrid"></div>
         </div>
     </div>
 
     <script>
-        const selectedDownloads = new Map();
-
         document.getElementById('urlForm').addEventListener('submit', function(e) {
             e.preventDefault();
 
             const url = document.getElementById('urlInput').value;
             const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            clearPreviousData();
+            document.getElementById('error-message').style.display = "none";
 
             if (!url.startsWith("https://disk.yandex.com/")) {
                 document.getElementById('error-message').textContent = "URL должен начинаться с 'https://disk.yandex.com/'";
@@ -118,88 +98,77 @@
             })
             .then(response => response.json())
             .then(data => {
-                const errorMessage = document.getElementById('error-message');
-                const imagesContainer = document.getElementById('imagesContainer');
-                const buttonsContainer = document.getElementById('buttonsContainer');
-                errorMessage.style.display = "none";
-                imagesContainer.innerHTML = "";
-                selectedDownloads.clear();
-                buttonsContainer.style.display = "none";
-
-                if (!data || !data.data || !data.data.previews || data.data.previews.length === 0) {
-                    errorMessage.textContent = "Нет доступных данных для отображения.";
-                    errorMessage.style.display = "block";
-                    return;
+                if (data.errors) {
+                    document.getElementById('error-message').textContent = data.errors.url[0];
+                    document.getElementById('error-message').style.display = "block";
+                } else if (!data.data || !data.data.previews.length) {
+                    document.getElementById('error-message').textContent = 'Нет данных для отображения.';
+                    document.getElementById('error-message').style.display = "block";
+                    document.getElementById('result').style.display = 'none';
+                } else {
+                    renderPreviews(data.data.previews);
                 }
-
-                data.data.previews.forEach(item => {
-                    const wrapper = document.createElement('div');
-                    wrapper.classList.add('image-wrapper');
-
-                    if (item.preview) {
-                        const imgElement = document.createElement('img');
-                        imgElement.src = item.preview;
-                        imgElement.alt = item.name;
-                        imgElement.title = item.name;
-                        wrapper.appendChild(imgElement);
-                    } else {
-                        const noPreview = document.createElement('div');
-                        noPreview.classList.add('no-preview');
-                        noPreview.textContent = 'No preview';
-                        wrapper.appendChild(noPreview);
-                    }
-
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.classList.add('checkbox');
-                    checkbox.title = 'Выбрать';
-                    checkbox.addEventListener('change', () => {
-                        if (checkbox.checked) {
-                            selectedDownloads.set(item.name, item.download);
-                        } else {
-                            selectedDownloads.delete(item.name);
-                        }
-                    });
-                    wrapper.appendChild(checkbox);
-
-                    const nameElement = document.createElement('div');
-                    nameElement.classList.add('name');
-                    nameElement.textContent = item.name;
-                    wrapper.appendChild(nameElement);
-
-                    imagesContainer.appendChild(wrapper);
-                });
-
-                buttonsContainer.style.display = "flex";
-
-                document.getElementById('downloadSelected').addEventListener('click', () => {
-                    if (selectedDownloads.size === 0) {
-                        alert('Выберите хотя бы один элемент для скачивания.');
-                        return;
-                    }
-                    selectedDownloads.forEach((url, name) => {
-                        const link = document.createElement('a');
-                        link.href = url;
-                        link.download = name;
-                        link.click();
-                    });
-                });
-
-                document.getElementById('downloadAll').addEventListener('click', () => {
-                    data.data.previews.forEach(item => {
-                        const link = document.createElement('a');
-                        link.href = item.download;
-                        link.download = item.name;
-                        link.click();
-                    });
-                });
             })
             .catch(error => {
-                const errorMessage = document.getElementById('error-message');
-                errorMessage.textContent = 'Ошибка: ' + error.message;
-                errorMessage.style.display = "block";
+                document.getElementById('error-message').textContent = 'Ошибка: ' + error.message;
+                document.getElementById('error-message').style.display = "block";
             });
         });
+
+        function clearPreviousData() {
+            document.getElementById('previewGrid').innerHTML = '';
+            document.getElementById('result').style.display = 'none';
+        }
+
+        function renderPreviews(previews) {
+            const previewGrid = document.getElementById('previewGrid');
+            previewGrid.innerHTML = '';
+            document.getElementById('result').style.display = 'block';
+
+            previews.forEach(item => {
+                const previewItem = document.createElement('div');
+                previewItem.classList.add('preview-item');
+
+                const content = item.preview 
+                    ? `<img src="${item.preview}" alt="${item.name}">` 
+                    : `<div class="no-preview">No preview</div>`;
+
+                previewItem.innerHTML = `
+                    ${content}
+                    <div>${item.name}</div>
+                `;
+
+                previewItem.addEventListener('click', () => {
+                    downloadFile(item.download, item.name);
+                });
+
+                previewItem.setAttribute('data-download', item.download);
+                previewItem.setAttribute('data-name', item.name);
+
+                previewGrid.appendChild(previewItem);
+            });
+        }
+        
+        document.getElementById('downloadAll').addEventListener('click', async () => {
+            const allItems = document.querySelectorAll('.preview-item');
+            for (const item of allItems) {
+                const url = item.getAttribute('data-download');
+                const name = item.getAttribute('data-name');
+                if (url && name) {
+                    await downloadFile(url, name);
+                }
+            }
+        });
+
+        async function downloadFile(url, filename) {
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
     </script>
 </body>
 </html>

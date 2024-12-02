@@ -149,15 +149,13 @@
             });
         }
         
-        document.getElementById('downloadAll').addEventListener('click', async () => {
+        document.getElementById('downloadAll').addEventListener('click', () => {
             const allItems = document.querySelectorAll('.preview-item');
-            for (const item of allItems) {
-                const url = item.getAttribute('data-download');
-                const name = item.getAttribute('data-name');
-                if (url && name) {
-                    await downloadFile(url, name);
-                }
-            }
+
+            allItems.forEach(item => {
+                // Костыль :)
+                item.click();
+            });
         });
 
         async function downloadFile(url, filename) {

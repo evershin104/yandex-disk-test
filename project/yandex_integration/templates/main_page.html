@@ -19,6 +19,19 @@
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
+        #imagesContainer {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        #imagesContainer img {
+            max-width: 150px;
+            max-height: 150px;
+            object-fit: cover;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
@@ -28,25 +41,27 @@
             {% csrf_token %}
             <div class="mb-3">
                 <label for="urlInput" class="form-label">Введите публичную ссылку директории</label>
-                <input type="url" class="form-control" id="urlInput" name="url" placeholder="https://disk.yandex.com/d/***" value="{{ url }}" required>
+                <input type="url" class="form-control" id="urlInput" name="url" placeholder="https://disk.yandex.com/***" value="{{ url }}" required>
                 <div id="error-message" class="text-danger mt-2" style="display: none;"></div>
             </div>
             <div class="d-grid gap-2">
                 <button type="submit" class="btn btn-primary">Получить данные</button>
             </div>
         </form>
+
+        <div id="imagesContainer"></div>
     </div>
 
     <script>
         document.getElementById('urlForm').addEventListener('submit', function(e) {
             e.preventDefault();
 
-            const url = document.getElementById('urlInput').value;  // Получаем значение URL
+            const url = document.getElementById('urlInput').value;
             const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
             // Проверка начала строки URL
-            if (!url.startsWith("https://disk.yandex.com/d/")) {
-                document.getElementById('error-message').textContent = "URL должен начинаться с 'https://disk.yandex.com/d/***'";
+            if (!url.startsWith("https://disk.yandex.com/")) {
+                document.getElementById('error-message').textContent = "URL должен начинаться с 'https://disk.yandex.com/'";
                 document.getElementById('error-message').style.display = "block";
                 return;
             }
@@ -61,15 +76,29 @@
             })
             .then(response => response.json())
             .then(data => {
-                if (data.errors) {
-                    document.getElementById('error-message').textContent = data.errors.url[0];
-                    document.getElementById('error-message').style.display = "block";
-                } else {
-                    alert(data.message);
+                const errorMessage = document.getElementById('error-message');
+                const imagesContainer = document.getElementById('imagesContainer');
+                errorMessage.style.display = "none";
+                imagesContainer.innerHTML = "";
+
+                if (!data || !data.data || !data.data.previews || data.data.previews.length === 0) {
+                    errorMessage.textContent = "Нет доступных данных для отображения.";
+                    errorMessage.style.display = "block";
+                    return;
                 }
+
+                data.data.previews.forEach(item => {
+                    const imgElement = document.createElement('img');
+                    imgElement.src = item.preview;
+                    imgElement.alt = item.name;
+                    imgElement.title = item.name;
+                    imagesContainer.appendChild(imgElement);
+                });
             })
             .catch(error => {
-                alert('Ошибка: ' + error.message);
+                const errorMessage = document.getElementById('error-message');
+                errorMessage.textContent = 'Ошибка: ' + error.message;
+                errorMessage.style.display = "block";
             });
         });
     </script>

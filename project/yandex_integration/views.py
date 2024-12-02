@@ -13,9 +13,9 @@ class URLSubmitView(View):
     def post(self, request, *args, **kwargs)-> JsonResponse:        # noqa maybe static
         """Main request handler for `URLForm`
         Args:
-            default for `get`...
+            default for `post` method ...
         Returns:
-            JsonResponse with its' data
+            JsonResponse with its data
         """
         form = URLForm(request.POST)
         if form.is_valid():
